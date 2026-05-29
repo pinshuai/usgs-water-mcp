@@ -16,14 +16,19 @@ The server is modularly designed with separate API handlers unified through a si
 
 ```
 usgs-water-mcp/
-├── main.py                  # Unified entry point
-├── water_data_api.py        # USGS Water Services API tools
-├── flood_impact_api.py      # Real-Time Flood Impacts API tools
-├── ogc_api.py              # OGC API tools
-├── current_water_levels.py  # Legacy combined file (deprecated)
-├── Dockerfile              # Docker configuration
-├── pyproject.toml          # Project dependencies
-└── README.md               # This file
+├── src/usgs_water_mcp/
+│   ├── server.py      # FastMCP singleton + tool imports
+│   ├── config.py      # API base-URL constants
+│   ├── client.py      # Shared async HTTP helpers
+│   ├── __main__.py    # Entry point for python -m usgs_water_mcp
+│   └── tools/
+│       ├── water_data.py    # fetch_usgs_data, fetch_usgs_realtime_data
+│       ├── flood_impact.py  # Real-Time Flood Impact tools
+│       ├── ogc.py           # OGC monitoring location tools
+│       └── plot.py          # Plotly visualization tools
+├── Dockerfile
+├── pyproject.toml
+└── README.md
 ```
 
 ## Service
@@ -99,14 +104,40 @@ pip install -e .
    {
      "mcpServers": {
        "usgs-water": {
-         "command": "python",
-         "args": ["/path/to/usgs-water-mcp/main.py"]
+         "command": "uv",
+         "args": ["run", "--directory", "/path/to/usgs-water-mcp", "python", "-m", "usgs_water_mcp"]
        }
      }
    }
    ```
 
 3. Restart Claude Desktop
+
+## Connecting with Claude Code
+
+Use the `claude mcp add` command to register the server. Choose user scope (available in all projects) or project scope (current project only).
+
+**User scope** (recommended for general use):
+
+```bash
+claude mcp add usgs-water -s user -- \
+    uv run --directory /path/to/usgs-water-mcp python -m usgs_water_mcp
+```
+
+**Project scope** (adds a `.mcp.json` to the current project):
+
+```bash
+claude mcp add usgs-water -- \
+    uv run --directory /path/to/usgs-water-mcp python -m usgs_water_mcp
+```
+
+Verify the server registered and connected:
+
+```bash
+claude mcp get usgs-water
+```
+
+The output should show `Status: ✓ Connected` and list the command. Start a new Claude Code session — the 23 USGS water tools will be available immediately.
 
 ## Available Tools
 
