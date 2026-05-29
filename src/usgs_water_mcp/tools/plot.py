@@ -30,7 +30,7 @@ _REF_YEAR = 2000
 
 
 def _build_figure(
-    dates: list, flows: list, site_name: str, variable_name: str, unit: str
+    dates: list, flows: list, site_name: str, site_id: str, variable_name: str, unit: str
 ) -> go.Figure:
     peak_i = flows.index(max(flows))
     mean_q = sum(flows) / len(flows)
@@ -72,7 +72,7 @@ def _build_figure(
     )
     fig.update_layout(
         title=dict(
-            text=f"USGS — {site_name}<br><sub>{variable_name} ({unit})</sub>",
+            text=f"{site_name}<br><sub>{variable_name} ({unit}) · USGS: {site_id}</sub>",
             x=0.5,
             xanchor="center",
         ),
@@ -131,7 +131,7 @@ async def plot_usgs_data(
     if not flows:
         return f"No valid data returned for site {sites}."
 
-    fig = _build_figure(dates, flows, site_name, variable_name, unit)
+    fig = _build_figure(dates, flows, site_name, sites, variable_name, unit)
 
     if not output_path:
         fd, output_path = tempfile.mkstemp(suffix=".html", prefix="usgs_plot_")
@@ -275,8 +275,8 @@ async def plot_usgs_overlay(
     fig.update_layout(
         title=dict(
             text=(
-                f"USGS — {site_name}<br>"
-                f"<sub>{variable_name} ({unit}) — day-of-year comparison</sub>"
+                f"{site_name}<br>"
+                f"<sub>{variable_name} ({unit}) · USGS: {sites} — day-of-year comparison</sub>"
             ),
             x=0.5,
             xanchor="center",
