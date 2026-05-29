@@ -272,6 +272,41 @@ Get coordinate accuracy codes for latitude-longitude values.
 - `limit` (optional): Maximum number of results (default: 100)
 - `offset` (optional): Starting offset for pagination (default: 0)
 
+### Visualization Tools
+
+#### plot_usgs_data
+
+Fetch USGS daily water data for a single site and date range and open an
+interactive Plotly HTML chart in the default browser.
+
+**Parameters:**
+- `sites` (required): Single USGS site number (e.g. `"10109000"`)
+- `parameter_codes` (optional): `"00060"` = streamflow ft³/s (default), `"00065"` = gage height ft
+- `start_date` / `end_date` (optional): ISO dates (`YYYY-MM-DD`)
+- `stat_codes` (optional): `"00003"` = mean (default), `"00001"` = max, `"00002"` = min
+- `output_path` (optional): Path for the saved HTML file (defaults to system temp dir)
+
+#### plot_usgs_overlay
+
+Fetch USGS daily data for **multiple years** and overlay them on a shared
+day-of-year axis so seasonal patterns (e.g. snowmelt peaks) align visually
+regardless of calendar year.
+
+**Parameters:**
+- `sites` (required): Single USGS site number
+- `years` (required): Comma-separated calendar years, e.g. `"2023,2024,2025"`
+- `parameter_codes` (optional): Same codes as `plot_usgs_data` (default `"00060"`)
+- `stat_codes` (optional): Same codes as `plot_usgs_data` (default `"00003"`)
+- `output_path` (optional): Path for the saved HTML file
+
+**Example usage:**
+```
+Compare Logan River snowmelt runoff across three years:
+sites: "10109000"
+years: "2023,2024,2025"
+```
+
+
 ## Troubleshooting
 
 ### Common Issues
