@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "usgs-water": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/path/to/usgs-water-mcp",
+        "python",
+        "-m",
+        "usgs_water_mcp"
+      ]
+    }
+  }
+}

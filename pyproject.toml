@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "usgs-water-mcp"
 version = "0.1.0"
@@ -10,5 +14,8 @@ dependencies = [
     "plotly>=5.0.0",
 ]
 
-[tool.setuptools]
-py-modules = ["main", "water_data_api", "flood_impact_api", "ogc_api", "plot_api", "current_water_levels"]
+[project.scripts]
+usgs-water-mcp = "usgs_water_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/usgs_water_mcp"]

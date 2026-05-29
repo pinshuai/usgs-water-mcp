@@ -2,11 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Copy the project files
 COPY . .
 
-# Upgrade pip and install the project in editable mode
 RUN pip install --upgrade pip \
     && pip install -e .
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "usgs_water_mcp"]
