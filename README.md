@@ -31,10 +31,6 @@ usgs-water-mcp/
 └── README.md
 ```
 
-## Service
-
-If you want a clean web interface that utilizes these tools visit https://aqua-node.onrender.com/landing and help me do some testing!
-
 ## Sample Output
 
 Here's an example of fetching stream flow data for the Potomac River:
@@ -87,7 +83,7 @@ pip install -e .
 
 ### Manual Installation
 
-1. Clone this repository
+1. Clone this repository. Save the `/path/to/usgs-water-mcp`, which will be used in the set up.
 2. Install dependencies:
    ```bash
    pip install httpx mcp
@@ -332,10 +328,11 @@ regardless of calendar year.
 
 **Example usage:**
 ```
-Compare Logan River snowmelt runoff across three years:
-sites: "10109000"
-years: "2023,2024,2025"
+Plot streamflow in Logan River, UT near state dam for the past six months.
 ```
+
+Plot automatically opened in a browser that allows interactive exploration:
+![Logan River streamflow – past six months](examples/LoganRiverStreamflow.png)
 
 
 ## Troubleshooting
