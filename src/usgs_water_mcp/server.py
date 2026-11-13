@@ -19,6 +19,8 @@ Tools for querying USGS water data across three upstream APIs.
 Water Services (NWIS):
   fetch_usgs_data          — daily mean/max/min values, any date range
   fetch_usgs_realtime_data — 15-min instantaneous values, last ~120 days only
+  fetch_usgs_annual_statistics — USGS-published annual means (water or calendar year),
+                             full period of record, with summary + missing years
 
 Real-Time Flood Impacts (RTFI):
   get_flooding_reference_points, get_reference_points, get_reference_point_by_id,
@@ -38,6 +40,7 @@ NLDI — watershed basin boundaries:
 Visualization (Plotly HTML, opens in browser):
   plot_usgs_data    — single site / date range, filled area chart
   plot_usgs_overlay — multiple years on a shared day-of-year axis
+  plot_usgs_annual  — annual mean time series over the full record (gaps shaded)
 
 Common parameter codes: "00060"=streamflow ft³/s, "00065"=gage height ft.
 Common stat codes:      "00003"=mean (default), "00001"=max, "00002"=min.

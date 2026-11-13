@@ -10,8 +10,9 @@ from datetime import date as _date
 
 import plotly.graph_objects as go
 
-from usgs_water_mcp.client import get_water_data_values
+from usgs_water_mcp.client import get_annual_statistics, get_ogc_data, get_water_data_values
 from usgs_water_mcp.server import mcp
+from usgs_water_mcp.tools.water_data import summarize_annual
 
 # Colour cycle for overlay traces (up to 8 years)
 _COLORS = [
@@ -298,3 +299,148 @@ async def plot_usgs_overlay(
     webbrowser.open(f"file://{os.path.abspath(output_path)}")
 
     return "\n".join([f"Plot saved: {output_path}", *summary_lines])
+
+
+async def _site_name(site: str) -> str:
+    """Look up the station name via the OGC API; fall back to the site number."""
+    try:
+        data = await get_ogc_data(f"collections/monitoring-locations/items/USGS-{site}")
+        return data.get("properties", {}).get("monitoring_location_name") or f"USGS {site}"
+    except Exception:
+        return f"USGS {site}"
+
+
+def _contiguous_runs(years: list[int]) -> list[list[int]]:
+    """Split sorted years into runs of consecutive years, e.g. [1,2,4] -> [[1,2],[4]]."""
+    runs: list[list[int]] = []
+    for y in years:
+        if runs and y == runs[-1][-1] + 1:
+            runs[-1].append(y)
+        else:
+            runs.append([y])
+    return runs
+
+
+def _year_ranges(years: list[int]) -> list[tuple[int, int]]:
+    return [(r[0], r[-1]) for r in _contiguous_runs(years)] if years else []
+
+
+@mcp.tool()
+async def plot_usgs_annual(
+    sites: str,
+    parameter_codes: str = "00060",
+    year_type: str = "water",
+    output_path: str = "",
+) -> str:
+    """Plot the USGS-published annual mean time series (e.g. annual mean discharge by
+    water year) for one site over its full period of record, as an interactive Plotly
+    HTML chart opened in the browser. Same style as plot_usgs_data: filled area, peak
+    and low markers, dashed long-term mean. Missing (incomplete) years are shaded and
+    the line/fill break there instead of interpolating across them.
+    year_type: "water" (default) or "calendar". output_path: optional HTML path."""
+    site = sites.split(",")[0].strip()
+    if year_type not in ("water", "calendar"):
+        return 'year_type must be "water" or "calendar"'
+    rows = await get_annual_statistics(site, parameter_codes, year_type)
+    if not rows:
+        return f"No annual statistics returned for site {site}, parameter {parameter_codes}."
+
+    series = summarize_annual(rows)
+    key, s = next(iter(series.items()))  # first time series if a site has several
+    d = {y["year"]: y["mean"] for y in s["years"]}
+    summ = s["summary"]
+    site_name = await _site_name(site)
+    unit = "ft3/s" if parameter_codes == "00060" else ""
+    prefix = "WY" if year_type == "water" else ""
+    label = f"Annual mean ({unit})" if unit else "Annual mean"
+
+    fig = go.Figure()
+    # fill="tozeroy" bridges None gaps in Plotly, so draw each consecutive run separately
+    for i, run in enumerate(_contiguous_runs(sorted(d))):
+        fig.add_trace(
+            go.Scatter(
+                x=run,
+                y=[d[y] for y in run],
+                mode="lines+markers",
+                fill="tozeroy",
+                line=dict(color="steelblue", width=1.5),
+                marker=dict(size=4, color="steelblue"),
+                fillcolor="rgba(70,130,180,0.25)",
+                name=label,
+                legendgroup="annual",
+                showlegend=(i == 0),
+                hovertemplate=f"<b>{prefix}%{{x}}</b><br>%{{y:.1f}} {unit}<extra></extra>",
+            )
+        )
+    for tag, ext, color, pos in [
+        ("Peak", summ["max"], "darkblue", "top center"),
+        ("Low", summ["min"], "firebrick", "bottom center"),
+    ]:
+        fig.add_trace(
+            go.Scatter(
+                x=[ext["year"]],
+                y=[ext["mean"]],
+                mode="markers+text",
+                marker=dict(color=color, size=10),
+                text=[f"{tag}: {ext['mean']:.1f} {unit} ({prefix}{ext['year']})"],
+                textposition=pos,
+                textfont=dict(size=11, color=color),
+                name=tag,
+                hovertemplate=f"<b>{tag}</b><br>{prefix}%{{x}}<br>%{{y:.1f}} {unit}<extra></extra>",
+            )
+        )
+    fig.add_hline(
+        y=summ["mean_of_annual_means"],
+        line_dash="dash",
+        line_color="gray",
+        line_width=1,
+        annotation_text=f"Mean: {summ['mean_of_annual_means']:.2f} {unit}",
+        annotation_position="bottom right",
+        annotation_font_size=11,
+    )
+    for a, b in _year_ranges(summ["missing_years"]):
+        fig.add_vrect(
+            x0=a - 0.5, x1=b + 0.5, fillcolor="lightgray", opacity=0.35, line_width=0,
+            annotation_text="no data", annotation_position="top left", annotation_font_size=10,
+        )
+    yr_word = "water" if year_type == "water" else "calendar"
+    fig.update_layout(
+        title=dict(
+            text=(
+                f"{site_name}<br><sub>Annual mean by {yr_word} year ({unit}) · USGS: {site}"
+                f" · {summ['n_years']} complete {yr_word} years</sub>"
+            ),
+            x=0.5,
+            xanchor="center",
+        ),
+        xaxis=dict(
+            title=f"{yr_word.capitalize()} year",
+            range=[summ["first_year"] - 2, summ["last_year"] + 2],
+            showgrid=True,
+            gridcolor="#eee",
+        ),
+        yaxis=dict(title=label, showgrid=True, gridcolor="#eee", rangemode="tozero"),
+        hovermode="x unified",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        legend=dict(orientation="h", yanchor="top", y=-0.12, xanchor="center", x=0.5),
+        margin=dict(l=60, r=30, t=90, b=100),
+    )
+
+    if not output_path:
+        fd, output_path = tempfile.mkstemp(suffix=".html", prefix="usgs_annual_")
+        os.close(fd)
+    fig.write_html(output_path, include_plotlyjs="cdn")
+    webbrowser.open(f"file://{os.path.abspath(output_path)}")
+
+    note = f"\nNote: site has {len(series)} time series; plotted {key}" if len(series) > 1 else ""
+    return (
+        f"Plot saved: {output_path}\n"
+        f"Site: {site_name}\n"
+        f"Years: {summ['first_year']}-{summ['last_year']} ({summ['n_years']} complete)\n"
+        f"Missing: {summ['missing_years'] or 'none'}\n"
+        f"Mean of annual means: {summ['mean_of_annual_means']:.2f} {unit}  "
+        f"Peak: {summ['max']['mean']:.1f} ({prefix}{summ['max']['year']})  "
+        f"Low: {summ['min']['mean']:.1f} ({prefix}{summ['min']['year']})"
+        f"{note}"
+    )

@@ -15,7 +15,7 @@ uv run python -m usgs_water_mcp
 claude mcp add usgs-water -s user -- \
     uv run --directory /Users/a02388352/github/usgs-water-mcp python -m usgs_water_mcp
 
-# Verify all tools register (should print 23)
+# Verify all tools register (should print 26)
 uv run python -c "
 from usgs_water_mcp.server import mcp
 print(len(mcp._tool_manager._tools))
@@ -35,10 +35,10 @@ src/usgs_water_mcp/
 ├── client.py      # shared async HTTP helpers: get_water_data_values, get_rtfi_data, get_ogc_data
 ├── __main__.py    # entry point for `python -m usgs_water_mcp`
 └── tools/
-    ├── water_data.py    # fetch_usgs_data, fetch_usgs_realtime_data
+    ├── water_data.py    # fetch_usgs_data, fetch_usgs_realtime_data, fetch_usgs_annual_statistics
     ├── flood_impact.py  # 12 RTFI tools
     ├── ogc.py           # 7 OGC tools
-    └── plot.py          # plot_usgs_data, plot_usgs_overlay
+    └── plot.py          # plot_usgs_data, plot_usgs_overlay, plot_usgs_annual
 ```
 
 **Singleton + side-effect import pattern** (mirrors `ats-mcp`):
@@ -58,9 +58,10 @@ all HTTP logic goes through helpers in `client.py`.
 |---|---|---|
 | `water_data.py` | NWIS daily-values | `USGS_DV_API_BASE` |
 | `water_data.py` | NWIS instantaneous | `USGS_IV_API_BASE` |
+| `water_data.py`, `plot.py` | NWIS statistics (annual, RDB only) | `USGS_STAT_API_BASE` |
 | `flood_impact.py` | Real-Time Flood Impacts | `RTFI_API_BASE` |
 | `ogc.py` | OGC monitoring locations | `OGC_API_BASE` |
-| `plot.py` | (local Plotly, no upstream) | — |
+| `plot.py` | local Plotly (+ OGC for station name in `plot_usgs_annual`) | `OGC_API_BASE` |
 
 ## How multi-year overlay plots work correctly
 
@@ -88,3 +89,9 @@ The correct approach used by `plot_usgs_overlay` (in `tools/plot.py`):
 The reference-year trick and `tickformat="%b"` / `dtick="M1"` axis settings
 are the critical pieces — apply the same pattern to any new multi-year
 visualization added to this server.
+
+## Annual statistics notes
+
+- The NWIS stat service (`/nwis/stat/`) only returns RDB, not JSON; `client._parse_rdb` skips `#` comments and the column-format row.
+- USGS omits incomplete years entirely (no nulls), and rounds annual means to 0.1. Two years can therefore show identical values (e.g. 10113500 WY2021 = 61.46, WY2022 = 61.53, both published as 61.5). For full precision, average `fetch_usgs_data` daily values over the water year.
+- In `plot_usgs_annual`, each run of consecutive years is a separate trace: Plotly's `fill="tozeroy"` bridges `None` gaps even when `connectgaps=False`.

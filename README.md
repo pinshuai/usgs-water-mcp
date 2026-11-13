@@ -22,7 +22,7 @@ usgs-water-mcp/
 │   ├── client.py      # Shared async HTTP helpers
 │   ├── __main__.py    # Entry point for python -m usgs_water_mcp
 │   └── tools/
-│       ├── water_data.py    # fetch_usgs_data, fetch_usgs_realtime_data
+│       ├── water_data.py    # fetch_usgs_data, fetch_usgs_realtime_data, fetch_usgs_annual_statistics
 │       ├── flood_impact.py  # Real-Time Flood Impact tools
 │       ├── ogc.py           # OGC monitoring location tools
 │       └── plot.py          # Plotly visualization tools
@@ -162,6 +162,25 @@ Fetch instantaneous water data from USGS monitoring stations.
 Get current stream flow for the Potomac River near Washington, DC:
 sites: "01646500"
 parameter_codes: "00060"
+```
+
+#### fetch_usgs_annual_statistics
+
+Fetch USGS-published annual mean values (e.g. annual mean discharge by water
+year) for the full period of record from the NWIS statistics service.
+
+**Parameters:**
+- `sites` (required): Comma-separated site numbers
+- `parameter_codes` (optional): default `"00060"` (streamflow, ft³/s)
+- `year_type` (optional): `"water"` (Oct 1 – Sep 30, default) or `"calendar"`
+
+Returns each year's mean and day count, plus a summary: number of years,
+mean and median of annual means, wettest/driest year, and missing years.
+USGS reports only complete years and rounds to 0.1.
+
+**Example Usage:**
+```
+What is the annual mean discharge by water year for gage 10113500?
 ```
 
 ### Real-Time Flood Impact Tools
@@ -333,6 +352,18 @@ Plot streamflow in Logan River, UT near state dam for the past six months.
 
 Plot automatically opened in a browser that allows interactive exploration:
 ![Logan River streamflow – past six months](examples/LoganRiverStreamflow.png)
+
+#### plot_usgs_annual
+
+Plot the annual mean time series for one site over its full period of record
+(same style as `plot_usgs_data`). Missing years are shaded and the line and
+fill break there instead of interpolating.
+
+**Parameters:**
+- `sites` (required): Single USGS site number
+- `parameter_codes` (optional): default `"00060"`
+- `year_type` (optional): `"water"` (default) or `"calendar"`
+- `output_path` (optional): Path for the saved HTML file
 
 
 ## Troubleshooting
