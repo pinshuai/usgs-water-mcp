@@ -32,6 +32,9 @@ OGC / monitoring metadata:
   get_agency_codes, get_altitude_datums, get_aquifer_codes,
   get_aquifer_types, get_coordinate_accuracy_codes
 
+NLDI — watershed basin boundaries:
+  get_watershed_boundary — upstream drainage basin polygon for any USGS gage (GeoJSON)
+
 Visualization (Plotly HTML, opens in browser):
   plot_usgs_data    — single site / date range, filled area chart
   plot_usgs_overlay — multiple years on a shared day-of-year axis
@@ -50,7 +53,7 @@ if __name__ == "__main__":
 
 # Side-effect imports — each module does `from usgs_water_mcp.server import mcp`
 # and registers its tools via @mcp.tool() at module level.
-from usgs_water_mcp.tools import water_data, flood_impact, ogc, plot  # noqa: E402, F401
+from usgs_water_mcp.tools import water_data, flood_impact, nldi, ogc, plot  # noqa: E402, F401
 
 
 def main() -> None:

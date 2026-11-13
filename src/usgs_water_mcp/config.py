@@ -11,3 +11,6 @@ RTFI_API_BASE = "https://api.waterdata.usgs.gov/rtfi-api"
 
 # OGC API — monitoring locations and reference metadata
 OGC_API_BASE = "https://api.waterdata.usgs.gov/ogcapi/v0"
+
+# NLDI (Network-Linked Data Index) — upstream watershed basin boundaries
+NLDI_API_BASE = "https://api.water.usgs.gov/nldi/linked-data/nwissite"
